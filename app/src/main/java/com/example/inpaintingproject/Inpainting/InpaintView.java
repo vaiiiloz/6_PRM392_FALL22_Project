@@ -201,7 +201,6 @@ public class InpaintView extends AppCompatActivity implements Inpainting.View, V
                                 String picturePath = cursor.getString(columnIndex);
                                 Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
                                 Matrix matrix = new Matrix();
-                                matrix.postRotate(90.0f);
                                 bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
                                 presenter.loadBitmap(bitmap);
                                 cursor.close();
