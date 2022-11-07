@@ -5,6 +5,8 @@ import android.graphics.*;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -12,34 +14,20 @@ import android.view.View;
 import androidx.annotation.Nullable;
 import com.example.inpaintingproject.Config.Config;
 import com.example.inpaintingproject.Config.DrawTool;
+import com.example.inpaintingproject.Tool.PaintTool;
 import com.example.inpaintingproject.Utils.utils;
 
 import java.util.ArrayList;
 
-public class InpaintCanvas extends View {
+public class InpaintCanvas extends View  {
 
-    class cPath{
-        Path path;
-        int mode;
-
-        public cPath(Path path, int mode) {
-            this.path = path;
-            this.mode = mode;
-        }
-    }
-
-    private final int paintColor = Color.BLUE;
-    private final int eraserColor = Color.TRANSPARENT;
-    private Paint drawPaint;
-    private Paint grayPaint;
-    private Paint eraser;
+    private PaintTool paintTool;
     private Canvas mask = null;
     private ArrayList<cPath> paths;
     private ArrayList<cPath> undonePaths;
     private Path mPath;
     private int mode=-1;
     private Bitmap mMask = null;
-    private boolean draw = false;
     private float mX, mY;
     private Bitmap backgroundBitmap = null;
     private Canvas backgroundCanvas = null;
@@ -48,34 +36,67 @@ public class InpaintCanvas extends View {
     private static final float TOUCH_TOLERANCE = 4;
 
     public InpaintCanvas(Context context) {
+
         super(context);
+        setAllow(true);
+        mode = DrawTool.CreateMode;
+
+//        paths = new ArrayList<>();
+//        undonePaths = new ArrayList<>();
+
+//
+//        mPath = new Path();
+//
+//        setupMask(Config.SceenWidth, Config.SceenHeight);
+//        setupBackground(Config.SceenWidth, Config.SceenHeight);
     }
 
 
     public InpaintCanvas(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        paths = new ArrayList<>();
-        undonePaths = new ArrayList<>();
         setAllow(true);
+        mode = DrawTool.CreateMode;
+//        paths = new ArrayList<>();
+//        undonePaths = new ArrayList<>();
 
-        setupPaint();
-        setupEraser();
-        mPath = new Path();
-
-        setupMask(Config.SceenWidth, Config.SceenHeight);
-        setupBackground(Config.SceenWidth, Config.SceenHeight);
+//
+//        mPath = new Path();
+//
+//        setupMask(Config.SceenWidth, Config.SceenHeight);
+//        setupBackground(Config.SceenWidth, Config.SceenHeight);
 
     }
 
+    public void setPaintTool(PaintTool paintTool) {
+        this.paintTool = paintTool;
+    }
 
-    private void setupEraser() {
-        eraser = new Paint();
-        eraser.setAntiAlias(true);
-        eraser.setStrokeWidth(20);
-        eraser.setStyle(Paint.Style.STROKE);
-        eraser.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+    public void setMask(Canvas mask) {
+        this.mask = mask;
+    }
 
+    public void setPaths(ArrayList<cPath> paths) {
+        this.paths = paths;
+    }
 
+    public void setUndonePaths(ArrayList<cPath> undonePaths) {
+        this.undonePaths = undonePaths;
+    }
+
+    public void setmPath(Path mPath) {
+        this.mPath = mPath;
+    }
+
+    public void setBackgroundBitmap(Bitmap backgroundBitmap) {
+        this.backgroundBitmap = backgroundBitmap;
+    }
+
+    public void setBackgroundCanvas(Canvas backgroundCanvas) {
+        this.backgroundCanvas = backgroundCanvas;
+    }
+
+    public void setBackgroundImage(Bitmap backgroundImage) {
+        this.backgroundImage = backgroundImage;
     }
 
     private void setupMask(int width, int height){
@@ -92,22 +113,7 @@ public class InpaintCanvas extends View {
         backgroundCanvas = new Canvas(backgroundBitmap);
     }
 
-    private void setupPaint(){
-        //set up paint and stoke style
-        drawPaint = new Paint();
-        drawPaint.setColor(paintColor);
-        drawPaint.setAntiAlias(true);
-        drawPaint.setStrokeWidth(5);
-        drawPaint.setStyle(Paint.Style.STROKE);
 
-        //set up gray paint
-        grayPaint = new Paint();
-        grayPaint.setColor(Color.WHITE);
-        ColorMatrix cm = new ColorMatrix();
-        cm.setSaturation(0);
-        ColorMatrixColorFilter f = new ColorMatrixColorFilter(cm);
-        grayPaint.setColorFilter(f);
-    }
 
     public void setAllow(boolean permission){
         setFocusable(permission);
@@ -116,16 +122,15 @@ public class InpaintCanvas extends View {
     }
 
     public void setImage(Bitmap bitmap){
-        Drawable drawable = new BitmapDrawable(getResources(), bitmap);
-
-        if (Build.VERSION.SDK_INT>= Build.VERSION_CODES.JELLY_BEAN){
-            this.setBackground(drawable);
-        }else{
-            this.setBackgroundDrawable(drawable);
-        }
+//        Drawable drawable = new BitmapDrawable(getResources(), bitmap);
+//
+//        if (Build.VERSION.SDK_INT>= Build.VERSION_CODES.JELLY_BEAN){
+//            this.setBackground(drawable);
+//        }else{
+//            this.setBackgroundDrawable(drawable);
+//        }
         backgroundImage = Bitmap.createScaledBitmap(bitmap, Config.SceenWidth, Config.SceenHeight, true);
-
-
+        postInvalidate();
     }
 
     public Bitmap getmMask() {
@@ -152,7 +157,7 @@ public class InpaintCanvas extends View {
         switch (event.getAction()){
             case MotionEvent.ACTION_DOWN:
                 //set start point end point
-                draw = true;
+
 
                 touch_down(x, y);
 
@@ -207,7 +212,7 @@ public class InpaintCanvas extends View {
         mPath.lineTo(mX, mY);
 
         // commit to mask
-        addMask(mPath, grayPaint);
+        addMask(mPath, paintTool.getGrayPaint());
 
 
         mPath = new Path();
@@ -221,7 +226,7 @@ public class InpaintCanvas extends View {
 
     private void createMask(){
         for (cPath p:paths){
-            drawPath(p.path, mask, grayPaint, p.mode);
+            drawPath(p.path, mask, paintTool.getGrayPaint(), p.mode);
         }
     }
 
@@ -235,7 +240,7 @@ public class InpaintCanvas extends View {
                 drawPolygon(mPath, canvas, paint);
                 break;
             case DrawTool.EraserMode:
-                drawLine(mPath, canvas, eraser);
+                drawLine(mPath, canvas, paintTool.getEraser());
 
 
                 break;
@@ -253,6 +258,7 @@ public class InpaintCanvas extends View {
     }
 
     private void drawLine(Path mPath, Canvas canvas, Paint paint){
+
         paint.setStyle(Paint.Style.STROKE);
 
         canvas.drawPath(mPath, paint);
@@ -296,24 +302,39 @@ public class InpaintCanvas extends View {
     }
 
     public void clear(){
-        mMask = Bitmap.createBitmap(Config.SceenWidth, Config.SceenHeight, Bitmap.Config.RGB_565);
-        backgroundBitmap = Bitmap.createBitmap(Config.SceenWidth, Config.SceenHeight, Bitmap.Config.ARGB_8888);
+        setupMask(Config.SceenWidth, Config.SceenHeight);
+        setupBackground(Config.SceenWidth, Config.SceenHeight);
         paths.clear();
         undonePaths.clear();
-        draw = false;
         postInvalidate();
+    }
+
+    public Bitmap getBackgroundBitmap() {
+        return backgroundBitmap;
     }
 
     @Override
     public void onDraw(Canvas canvas){
+        Log.e("paint", Integer.toString(mode));
+        canvas.drawBitmap(backgroundImage, 0, 0, null);
+
         if (mode!=DrawTool.NONEMODE){
+            if (mode==DrawTool.CreateMode){
+                mode = DrawTool.NONEMODE;
+
+            }
+
             for (cPath p:paths){
-                    drawPath(p.path, backgroundCanvas, drawPaint, p.mode);
-                    canvas.drawBitmap(utils.drawMask(backgroundImage, backgroundBitmap), 0, 0, null);
+                    drawPath(p.path, backgroundCanvas, paintTool.getDrawPaint(), p.mode);
 //                }
             }
+            canvas.drawBitmap(utils.drawMask(backgroundImage, backgroundBitmap), 0, 0, null);
+
         }
+
     }
+
+
 
     public int getMode() {
         return mode;

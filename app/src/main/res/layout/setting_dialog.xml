@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/settingFragment"
+    tools:context="com.example.inpaintingproject.Entity.SettingFragment">
+
+    <TextView
+        android:id="@+id/pensize"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="120dp"
+        android:layout_marginStart="10dp"
+        android:text="Pen Size"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/pensizeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0dp"
+        android:layout_marginTop="120dp"
+        android:layout_marginStart="200dp"
+        app:layout_constraintStart_toStartOf="@id/pensize"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <SeekBar
+        android:id="@+id/penSizeBar"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="120dp"
+        app:layout_constraintStart_toEndOf="@id/pensize"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/eraserSize"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:text="Eraser Size"
+        android:layout_marginStart="10dp"
+        android:max="100"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/pensize"
+        android:layout_marginTop="30dp" />
+
+    <TextView
+        android:id="@+id/eraserSizeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0dp"
+        app:layout_constraintTop_toTopOf="@id/pensize"
+        app:layout_constraintStart_toStartOf="@id/eraserSize"
+        android:layout_marginStart="200dp"
+        android:layout_marginTop="30dp" />
+
+    <SeekBar
+        android:id="@+id/eraserSizeBar"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="30dp"
+        android:max="100"
+        app:layout_constraintStart_toEndOf="@id/eraserSize"
+        app:layout_constraintTop_toTopOf="@id/penSizeBar"  />
+
+
+
+    <Button
+        android:id="@+id/pickColor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="30dp"
+        android:text="Pick Color"
+        app:layout_constraintStart_toEndOf="@+id/preview_selected_color"
+        app:layout_constraintTop_toBottomOf="@+id/eraserSizeBar" />
+
+    <Button
+        android:id="@+id/setColor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="setColor"
+        android:layout_marginTop="30dp"
+        android:layout_marginStart="10dp"
+        app:layout_constraintStart_toEndOf="@+id/pickColor"
+        app:layout_constraintTop_toBottomOf="@+id/eraserSizeBar" />
+
+    <View
+        android:id="@+id/preview_selected_color"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="30dp"
+        android:layout_marginStart="10dp"
+        android:background="@android:color/darker_gray"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/eraserSize" />
+
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

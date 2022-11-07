@@ -75,6 +75,7 @@ public class InpaintModel implements Inpainting.Model {
             image.compress(Bitmap.CompressFormat.JPEG, 90, out);
             out.flush();
             out.close();
+            Log.e("Save ok",file.getAbsolutePath());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {

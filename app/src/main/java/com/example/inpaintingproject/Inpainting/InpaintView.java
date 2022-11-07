@@ -22,11 +22,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+
 import com.example.inpaintingproject.Config.Config;
+import com.example.inpaintingproject.Entity.CanvasFragment;
 import com.example.inpaintingproject.Entity.InpaintCanvas;
+import com.example.inpaintingproject.Entity.SettingFragment;
 import com.example.inpaintingproject.Inpainting.InpaintPresenter;
 import com.example.inpaintingproject.Interface.Inpainting;
 import com.example.inpaintingproject.R;
+import com.example.inpaintingproject.Tool.PaintTool;
+
 import org.pytorch.Module;
 import org.pytorch.Tensor;
 
@@ -49,21 +56,60 @@ public class InpaintView extends AppCompatActivity implements Inpainting.View, V
     private Button circleButton;
     private Button eraseButton;
     private Button settingButton;
-    private InpaintCanvas inpaintCanvas;
+    private CanvasFragment canvasFragment;
+    private SettingFragment settingFragment;
     private InpaintPresenter presenter;
+    private FragmentManager fragmentManager = getSupportFragmentManager();
+    private PaintTool paintTool;
+    private boolean create;
+    private Bitmap currentBitmap;
 
 
+    public CanvasFragment getCanvasFragment() {
+        return canvasFragment;
+    }
 
+    public SettingFragment getSettingFragment() {
+        return settingFragment;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.inpainting_view);
         context = this.getApplicationContext();
+        paintTool = new PaintTool(20);
+        create = true;
         initView();
         registerListener();
         initPresenter();
+
         loadImage();
+
+
+    }
+
+    @Override
+    protected void onStart() {
+
+        super.onStart();
+        initFragment();
+
+
+    }
+
+    private void initFragment(){
+//        fragmentManager.beginTransaction()
+//                .setReorderingAllowed(true)
+//                .replace(R.id.fragment, canvasFragment, "canvas")
+//                .commitNow();
+
+//        settingFragment.setPaintTool(paintTool);
+        presenter.loadBitmap(currentBitmap);
+        canvasFragment.getInpaintCanvas().postInvalidate();
+        Log.e("Hey", Integer.toString(canvasFragment.getInpaintCanvas().getMode()));
+
+
     }
 
     private void loadImage(){
@@ -78,8 +124,8 @@ public class InpaintView extends AppCompatActivity implements Inpainting.View, V
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        presenter.loadBitmap(bitmap);
+        currentBitmap = bitmap;
+//        presenter.loadBitmap(currentBitmap);
     }
 
 
@@ -97,13 +143,31 @@ public class InpaintView extends AppCompatActivity implements Inpainting.View, V
         circleButton = findViewById(R.id.fast_paint);
         eraseButton = findViewById(R.id.eraser);
         settingButton = findViewById(R.id.setting);
-        inpaintCanvas = findViewById(R.id.inpaintCanvas);
-        inpaintCanvas.getLayoutParams().width = Config.SceenWidth;
-        inpaintCanvas.getLayoutParams().height = Config.SceenHeight;
+        canvasFragment = new CanvasFragment(paintTool);
+        settingFragment = new SettingFragment(paintTool);
+
+        fragmentManager.beginTransaction()
+                .setReorderingAllowed(true)
+                .add(R.id.fragment, settingFragment, "setting")
+                .commitNow();
+
+        fragmentManager.beginTransaction()
+                .setReorderingAllowed(true)
+                .add(R.id.fragment, canvasFragment, "canvas")
+                .commitNow();
+
+
+
+
+
+
+
     }
 
+
+
     private void initPresenter(){
-        presenter = new InpaintPresenter(this);
+        presenter = new InpaintPresenter(this, paintTool);
     }
 
     private void registerListener(){
@@ -121,11 +185,11 @@ public class InpaintView extends AppCompatActivity implements Inpainting.View, V
     }
 
     public void highLight(Button button){
-        button.setBackgroundColor(Color.argb(155, 185, 185, 185));
+        button.setEnabled(false);
     }
 
     public void unHighLight(Button button){
-        button.setBackgroundColor(Color.BLUE);
+        button.setEnabled(true);
     }
 
     @Override
@@ -185,7 +249,10 @@ public class InpaintView extends AppCompatActivity implements Inpainting.View, V
                         Matrix matrix = new Matrix();
                         matrix.postRotate(90.0f);
                         bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-                        presenter.loadBitmap(bitmap);
+                        currentBitmap = bitmap;
+                        presenter.loadBitmap(currentBitmap);
+                        canvasFragment.clear();
+
                     }
                     break;
                 case LIBRARY_CODE:
@@ -197,13 +264,18 @@ public class InpaintView extends AppCompatActivity implements Inpainting.View, V
                             Cursor cursor = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
                             if (cursor != null){
                                 cursor.moveToFirst();
+                                Log.e("find image", selectedImage.toString());
                                 int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
                                 String picturePath = cursor.getString(columnIndex);
                                 Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
                                 Matrix matrix = new Matrix();
                                 bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-                                presenter.loadBitmap(bitmap);
                                 cursor.close();
+                                currentBitmap = bitmap;
+                                presenter.loadBitmap(currentBitmap);
+                                canvasFragment.clear();
+
+
                             }
                         }
                     }
@@ -225,8 +297,9 @@ public class InpaintView extends AppCompatActivity implements Inpainting.View, V
 
     }
 
-    private void enableButton(boolean permission){
-        inpaintCanvas.setAllow(permission);
+    public void enableButton(boolean permission){
+        canvasFragment.getInpaintCanvas().setAllow(permission);
+
         inpaintButton.setEnabled(permission);
         cameraButton.setEnabled(permission);
         libraryButton.setEnabled(permission);
@@ -289,7 +362,10 @@ public class InpaintView extends AppCompatActivity implements Inpainting.View, V
     @Override
     public void onSettingButton() {
         presenter.HandleSetting();
+
     }
+
+
 
     @Override
     public void onInpaintButton() {
@@ -304,7 +380,8 @@ public class InpaintView extends AppCompatActivity implements Inpainting.View, V
 
     @Override
     public InpaintCanvas getInpaintCanvas() {
-        return inpaintCanvas;
+        return canvasFragment.getInpaintCanvas();
+
     }
 
     @Override
@@ -365,8 +442,11 @@ public class InpaintView extends AppCompatActivity implements Inpainting.View, V
 
             mProgressBar.setVisibility(View.INVISIBLE);
             enableButton(true);
-            inpaintCanvas.clear();
-            inpaintCanvas.setImage(output);
+            canvasFragment.setImage(output);
+            canvasFragment.clear();
+
+
+
         });
     }
 

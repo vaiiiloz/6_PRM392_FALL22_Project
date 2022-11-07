@@ -6,33 +6,33 @@ import android.graphics.BitmapFactory;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.Button;
+
+import androidx.fragment.app.FragmentManager;
+
 import com.example.inpaintingproject.Config.DrawTool;
+import com.example.inpaintingproject.Entity.CanvasFragment;
+import com.example.inpaintingproject.Entity.SettingFragment;
 import com.example.inpaintingproject.Interface.Inpainting;
+import com.example.inpaintingproject.R;
+import com.example.inpaintingproject.Tool.PaintTool;
 
 import java.io.IOException;
 
 public class InpaintPresenter implements Inpainting.Presenter{
     private InpaintModel model;
     private InpaintView view;
+    private PaintTool paintTool;
     private Button currentDrawButton = null;
+    private boolean setting = false;
 
-    public InpaintPresenter(InpaintView view) {
+    public InpaintPresenter(InpaintView view, PaintTool paintTool) {
+        this.paintTool = paintTool;
         model = new InpaintModel();
         this.view = view;
 
+
     }
 
-    private void test(){
-        try{
-            model.setImage(BitmapFactory.decodeStream(view.getAssets().open(Inpainting.View.emptyImage)));
-
-        }catch (IOException e){
-            e.printStackTrace();
-            view.finish();
-        }
-
-        view.getInpaintCanvas().setImage(model.getImage());
-    }
 
     private void unhighlightDraw(){
         if (currentDrawButton!=null){
@@ -89,6 +89,7 @@ public class InpaintPresenter implements Inpainting.Presenter{
         unhighlightDraw();
         model.save();
         view.showMessage("Save Image");
+        Log.e("Save", "ok");
 
     }
 
@@ -135,7 +136,35 @@ public class InpaintPresenter implements Inpainting.Presenter{
 
     @Override
     public void HandleSetting() {
+
         unhighlightDraw();
+
+        FragmentManager fragmentManager = view.getSupportFragmentManager();
+        if (fragmentManager.findFragmentById(R.id.fragment) instanceof CanvasFragment){
+            view.enableButton(false);
+            view.getSettingButton().setEnabled(true);
+            view.getSettingButton().setText("Cancel");
+
+//            fragmentManager.findFragmentByTag("setting");
+            fragmentManager.beginTransaction().
+                    setReorderingAllowed(true)
+                    .replace(R.id.fragment, view.getSettingFragment(), "setting")
+                    .commitNow();
+
+
+        }else{
+            view.enableButton(true);
+            view.getSettingButton().setText("Setting");
+            fragmentManager.beginTransaction().
+                    setReorderingAllowed(true)
+                    .replace(R.id.fragment, view.getCanvasFragment(), "canvas")
+                    .commitNow();
+//            view.getCanvasFragment().getInpaintCanvas().setPaintTool(paintTool);
+//            view.getCanvasFragment().getInpaintCanvas().setImage(model.getImage());
+//            view.getCanvasFragment().getInpaintCanvas().postInvalidate();
+
+//            ((CanvasFragment) fragmentManager.findFragmentById(R.id.fragment)).getInpaintCanvas().invalidate();
+        }
     }
 
     @Override
@@ -171,7 +200,8 @@ public class InpaintPresenter implements Inpainting.Presenter{
     @Override
     public void loadBitmap(Bitmap bitmap) {
         model.setImage(bitmap);
-        view.getInpaintCanvas().setImage(model.getImage());
+        view.getCanvasFragment().setImage(bitmap);
+//        view.getCanvasFragment().getInpaintCanvas().postInvalidate();
     }
 
 
